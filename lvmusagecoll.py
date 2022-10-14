@@ -8,8 +8,7 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY, CounterMetricFam
 from prometheus_client import start_http_server
 a = "docker inspect --format \"{{.GraphDriver.Data.DeviceName}}\""
 b = "docker ps --format \"{{.ID}} {{.Names}}\""
-dockerps = os.popen(b)
-
+c = "docker ps --format \"{{.ID}}\" | xargs docker inspect -f \"{{.ID}} {{.Name}} {{.GraphDriver.Data.DeviceName}}\""
 totalRandomNumber = 0
 class YCollector(object):
     def __init__(self):
@@ -18,16 +17,14 @@ class YCollector(object):
         myhostname = socket.gethostname()
         lvmused = GaugeMetricFamily("ycoll_lvmused","Direct LVM used bytes", labels=['hostname','containername','namespace','podname'])
         lvmfree = GaugeMetricFamily("ycoll_lvmfree","Direct LVM free bytes", labels=['hostname','containername','namespace','podname'])
-        with os.popen(b) as f:
+        with os.popen(c) as f:
           l1 = f.readlines()
           for litem in l1:
             arr = litem.strip().split(" ")
             container_name = arr[1]
             container_id = arr[0]
-            cmda = "docker inspect --format \"{{.GraphDriver.Data.DeviceName}}\" "+container_id
-            with os.popen(cmda) as f2:
-              l2 = f2.readlines()
-              for devicename in l2:
+            devicename = arr[2]
+            if True:
                 devsplit = devicename.split("-")
                 lvmid = devsplit[3].strip()
                 lvmmnt = "/var/lib/docker/devicemapper/mnt/" + lvmid
@@ -48,7 +45,6 @@ class YCollector(object):
                 else:
                   lvmused.add_metric([myhostname,container_name],stat2['usedbytes'])
                   lvmfree.add_metric([myhostname,container_name],stat2['freebytes'])
-
         yield lvmused
         yield lvmfree
 if __name__ == "__main__":
