@@ -12,7 +12,7 @@ b = "docker ps --format \"{{.ID}} {{.Names}}\""
 c = "docker ps --format \"{{.ID}}\" | xargs docker inspect -f \"{{.ID}}?{{.Name}}?{{.GraphDriver.Data.DeviceName}}?{{.GraphDriver.Data.UpperDir}}\""
 totalRandomNumber = 0
 def get_size(folder: str) -> int:
-    return sum(p.stat().st_size for p in Path(folder).rglob('*'))
+    return sum((p.stat().st_size if not p.is_symlink() else 0) for p in Path(folder).rglob('*'))
 class YCollector(object):
     def __init__(self):
         pass
